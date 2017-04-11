@@ -12,7 +12,7 @@
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU General Public License 
     along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 	
 function debug() {
@@ -75,7 +75,7 @@ require_once 'lib/ZabbixApi.class.php';
 use ZabbixApi\ZabbixApi;
 try {
     // connect to Zabbix API
-    $api = new ZabbixApi('http://10.254.0.10/api_jsonrpc.php', 'zabirepo', 'Nexis369*');
+    $api = new ZabbixApi('http://10.254.0.10/api_jsonrpc.php', 'zabirepo', 'nexis369*');
     /* ... do your stuff here ... */
 	
 $lhg=$api->hostgroupGet([
@@ -100,11 +100,9 @@ $hostrec = array('host' => '', 'name' => '', 'hostid' => '', 'description' => ''
 $alertrec = array('triggerid' => '', 'description' => '', 'lastchange' => '', 'priority' => '', 
 'expression' => '', 'status' => '', 'value' => '', 'ack' => '');
 
-
 // Query vers les hostgroups : $lhg
 foreach ($lhg as $hgid => $hg) {
-  if(strpos($hg->name, "NX") !== false) {
-  echo "hostgroup: $hgid $hg->name<br>\n";
+  //echo "hostgroup: $hgid $hg->name<br>\n";
   $hgrec['name'] = $hg->name;
   $hgrec['groupid'] = $hg->groupid;
   $data[$hgid] = $hgrec;
@@ -119,8 +117,7 @@ foreach ($lhg as $hgid => $hg) {
 
   // boucle de lecture des host
   foreach ($myhostlist as $hostid => $host) {
-    echo "\thost: $hostid $host->name<br>\n";
-
+    //echo "\thost: $hostid $host->name<br>\n";
     $hostrec['hostid'] = $host->hostid;
 	$hostrec['host'] = $host->host;
 	$hostrec['description'] = $host->description;
@@ -128,7 +125,7 @@ foreach ($lhg as $hgid => $hg) {
 	$hostrec['status'] = $host->status;
     $data[$hgid]['hosts'][$hostid] = $hostrec;
 	$idhost=$host->hostid;
-	echo "hostid: $hostid";
+	//echo "hostid: $hostid";
 	
     // Query alertes ack
 	$laph=$api->triggerGet([
@@ -176,7 +173,7 @@ foreach ($lhg as $hgid => $hg) {
 	
     // Boucle de lecture des alertes du host
     foreach ($alerts as $aid => $alert) {
-      echo "\t\t<br>alert: $aid $alert->triggerid<br>\n";
+      //echo "\t\t<br>alert: $aid $alert->triggerid<br>\n";
 		$alertrec['triggerid'] = $alert->triggerid;
 		$alertrec['description'] = $alert->description;
 		$alertrec['lastchange'] = $alert->lastchange;
@@ -190,22 +187,15 @@ foreach ($lhg as $hgid => $hg) {
 		printf("<br>",$aidsave,"<br>");
     }
   }
-  }
 }
-echo "<br><br>";
 debug($data);
 echo "<br>";
 $json=json_encode($data);
 echo "<br>";
-echo "<br>";
 echo $json;
 echo "<br>";
-echo "<br>";
 $jsondecode=json_decode($json);
-echo "<br>";
-echo "<br>";
 debug($jsondecode);
-echo "<br>";
 echo "<br>";
 var_dump($data);
 } catch (Exception $e) {
