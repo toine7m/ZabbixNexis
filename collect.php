@@ -1,5 +1,5 @@
 <?php
-/*     ZabbixNexis, little project for Zabbix during my internship
+/*  ZabbixNexis, little project for Zabbix during my internship
     Copyright (C) 2017 Massinon Antoine
 
     This program is free software: you can redistribute it and/or modify
