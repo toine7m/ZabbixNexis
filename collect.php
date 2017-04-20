@@ -66,7 +66,7 @@ $prevChar = $char;
 }
 return $result;
 }
-function ligne(){
+function row(){
 	printf("<hr noshade>");
     printf("<hr>");
 }
@@ -75,7 +75,7 @@ require_once 'lib/ZabbixApi.class.php';
 use ZabbixApi\ZabbixApi;
 try {
     // connect to Zabbix API
-    $api = new ZabbixApi('http://10.254.0.10/api_jsonrpc.php', 'zabirepo', 'zabirepo*');
+    $api = new ZabbixApi('http://10.254.0.10/api_jsonrpc.php', 'zabirepo', 'nexis369*');
     /* ... do your stuff here ... */
 	
 $lhg=$api->hostgroupGet([
@@ -145,9 +145,9 @@ foreach ($lhg as $hgid => $hg) {
 		
 	}
 	}
-/* 	ligne();
+/* 	row();
 	debug($tab1);
-	ligne(); */
+	row(); */
 
 	// Query alertes unAck	
 	$alertsunack=$api->triggerGet([
@@ -165,9 +165,9 @@ foreach ($lhg as $hgid => $hg) {
 		$otab2->ack = '0';
 	}
 	}
-/* 	ligne();
+/* 	row();
 	debug($tab2);
-	ligne(); */
+	row(); */
 
 	// Merge des 2 array's "ack" et "unack"
 	$alerts=array_merge_recursive($tab1,$tab2);
@@ -197,7 +197,7 @@ $jsondecode=json_decode($json);
 debug($jsondecode);
 echo "<br>";
 var_dump($data);
-ligne();
+row();
 
 $json = str_replace(' ', '£', $json);
 $data ="?data=" . $json;
@@ -214,14 +214,14 @@ $options = array(
 );
 $context  = stream_context_create($options);
 $result = file_get_contents($url, false, $context);
-ligne();
+row();
 if ($result === FALSE) {
 	/* Handle error */
 	echo "ouille !!" ;
 	}
 
 var_dump($result);
-ligne();
+row();
 } catch (Exception $e) {
     // Exception in ZabbixApi catched
     echo $e->getMessage();
