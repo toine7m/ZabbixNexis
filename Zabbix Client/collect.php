@@ -175,6 +175,9 @@ foreach ($lhg as $hgid => $hg) {
     foreach ($alerts as $aid => $alert) {
       //echo "\t\t<br>alert: $aid $alert->triggerid<br>\n";
 		$alertrec['triggerid'] = $alert->triggerid;
+		
+		// Recherche de la valeur "host.name" dans la description du trigger et la remplace directement,
+		// ce qui evite de devoir relier les deux ensuite
 		$hostname='{HOST.NAME}';
 		$pos= strpos($alert->description,$hostname);
 		if ($pos !== false){
@@ -182,7 +185,7 @@ foreach ($lhg as $hgid => $hg) {
 			echo "trouvé dans $alert->description";
 			row();
 		}
-		$alert->description=str_replace($hostname,$host->name,$alert->description);
+		$alert->description=str_replace($hostname,$host->name . " (" . $host->host .")" ,$alert->description);
 		if ($pos !== false){
 			row();
 			echo "trouvé dans $alert->description";
