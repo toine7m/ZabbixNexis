@@ -5,7 +5,7 @@ Simple project based on Zabbix for my internship at Nexis
 The goal of this project is to make a multi-client Zabbix with one Master, and transfer the alerts and specific datas through HTTP.
 For this purpose, I've to create some scripts for the client and for the supervisor.
 
-I choosed PHP because it's all the functions I want to use. I'm in my internship and I'm not a developer, so don't blame my messy bunch of cra... hum code !
+I choosed PHP because it's all the functions I want to use. I did that for my internship and I'm not a developer, so don't blame my messy bunch of cra... hum code !
 
 # Author
 
