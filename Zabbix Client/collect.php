@@ -142,8 +142,7 @@ foreach ($lhg as $hgid => $hg) {
 	if(!in_array(null, $tab1)){
 		foreach($tab1 as $otab1){
 		$otab1->ack = '1';
-		
-	}
+		}
 	}
 /* 	row();
 	debug($tab1);
@@ -176,6 +175,19 @@ foreach ($lhg as $hgid => $hg) {
     foreach ($alerts as $aid => $alert) {
       //echo "\t\t<br>alert: $aid $alert->triggerid<br>\n";
 		$alertrec['triggerid'] = $alert->triggerid;
+		$hostname='{HOST.NAME}';
+		$pos= strpos($alert->description,$hostname);
+		if ($pos !== false){
+			row();
+			echo "trouvé dans $alert->description";
+			row();
+		}
+		$alert->description=str_replace($hostname,$host->name,$alert->description);
+		if ($pos !== false){
+			row();
+			echo "trouvé dans $alert->description";
+			row();
+		}
 		$alertrec['description'] = $alert->description;
 		$alertrec['lastchange'] = $alert->lastchange;
 		$alertrec['priority'] = $alert->priority;
