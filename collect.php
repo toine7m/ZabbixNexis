@@ -75,7 +75,7 @@ require_once 'lib/ZabbixApi.class.php';
 use ZabbixApi\ZabbixApi;
 try {
     // connect to Zabbix API
-    $api = new ZabbixApi('http://10.254.0.10/api_jsonrpc.php', 'zabirepo', 'nexis369*');
+    $api = new ZabbixApi('http://10.254.0.10/api_jsonrpc.php', 'zabirepo', 'zabirepo*');
     /* ... do your stuff here ... */
 	
 $lhg=$api->hostgroupGet([
@@ -94,6 +94,7 @@ $laph[$h1->id][$a1->id] = $a1;
  
  // Array's initialisation
 $data = [];
+$clientrec = array('name' => '', 'groupid' => '', array());
 $hgrec = array('name' => '', 'groupid' => '', 'hosts' => array());
 $hostrec = array('host' => '', 'name' => '', 'hostid' => '', 'description' => '', 'status' => '', 
 'alerts' => array());
@@ -183,8 +184,6 @@ foreach ($lhg as $hgid => $hg) {
 		$alertrec['value'] = $alert->value;
 		$alertrec['ack'] = $alert->ack;
 		$data[$hgid]['hosts'][$hostid]['alerts'][$aid] = $alertrec;
-		$aidsave=$aid;
-		printf("<br>",$aidsave,"<br>");
     }
   }
 }
@@ -198,6 +197,31 @@ $jsondecode=json_decode($json);
 debug($jsondecode);
 echo "<br>";
 var_dump($data);
+ligne();
+
+$json = str_replace(' ', '£', $json);
+$data ="?data=" . $json;
+$url = 'http://10.254.0.123/html/api.php'.$data;
+
+// use key 'http' even if you send the request to https://...
+$options = array(
+    'http' => array(
+        'header'  => "Content-type: text/html",
+		//'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+        'method'  => 'POST',
+        'content' => http_build_query(array($data,$json))
+    )
+);
+$context  = stream_context_create($options);
+$result = file_get_contents($url, false, $context);
+ligne();
+if ($result === FALSE) {
+	/* Handle error */
+	echo "ouille !!" ;
+	}
+
+var_dump($result);
+ligne();
 } catch (Exception $e) {
     // Exception in ZabbixApi catched
     echo $e->getMessage();
