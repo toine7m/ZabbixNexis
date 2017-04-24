@@ -92,6 +92,9 @@ $lhphg[$hg1->id][$h1->id] = $h1;
 $laph[$h1->id][$a1->id] = $a1;
  */
  
+  // Configuration of the parameters
+ $prefixclient="NX_"; //Prefix added to the host->host, different from the visible name host->name
+ 
  // Array's initialisation
 $data = [];
 $clientrec = array('name' => '', 'groupid' => '', array());
@@ -104,8 +107,8 @@ $alertrec = array('triggerid' => '', 'description' => '', 'lastchange' => '', 'p
 // Query vers les hostgroups : $lhg
 foreach ($lhg as $hgid => $hg) {
   //echo "hostgroup: $hgid $hg->name<br>\n";
-  $hgrec['name'] = $hg->name;
-  $hgrec['groupid'] = $hg->groupid;
+  $hgrec['name'] = "client1";
+  $hgrec['groupid'] = "666gotohell";
   $data[$hgid] = $hgrec;
 
   // query des host dans le hostgroup
@@ -119,11 +122,11 @@ foreach ($lhg as $hgid => $hg) {
   // boucle de lecture des host
   foreach ($myhostlist as $hostid => $host) {
     //echo "\thost: $hostid $host->name<br>\n";
-    $hostrec['hostid'] = $host->hostid;
-	$hostrec['host'] = $host->host;
-	$hostrec['description'] = $host->description;
-	$hostrec['name'] = $host->name;
-	$hostrec['status'] = $host->status;
+    $hostrec['hostid'] = $hg->groupid;
+	$hostrec['host'] = $prefixclient.$hg->name;
+	$hostrec['description'] = "No description at the moment bro";
+	$hostrec['name'] = $hg->name;
+	$hostrec['status'] = "Active/Inactive";
     $data[$hgid]['hosts'][$hostid] = $hostrec;
 	$idhost=$host->hostid;
 	//echo "hostid: $hostid";
@@ -180,18 +183,16 @@ foreach ($lhg as $hgid => $hg) {
 		// ce qui evite de devoir relier les deux ensuite
 		$hostname='{HOST.NAME}';
 		$pos= strpos($alert->description,$hostname);
-		if ($pos !== false){
+		/* if ($pos !== false){
+			echo "trouvé dans : $alert->description";
 			row();
-			echo "trouvé dans $alert->description";
+		} */
+		$alert->description=str_replace($hostname,$host->name,$alert->description);
+		/* if ($pos !== false){
+			echo "modifié en : $alert->description";
 			row();
-		}
-		$alert->description=str_replace($hostname,$host->name . " (" . $host->host .")" ,$alert->description);
-		if ($pos !== false){
-			row();
-			echo "trouvé dans $alert->description";
-			row();
-		}
-		$alertrec['description'] = $alert->description;
+		} */
+		$alertrec['description'] = $alert->description. " (PROBLEM ON " . $host->host .")" ;
 		$alertrec['lastchange'] = $alert->lastchange;
 		$alertrec['priority'] = $alert->priority;
 		$alertrec['expression'] = $alert->expression;
@@ -202,7 +203,20 @@ foreach ($lhg as $hgid => $hg) {
     }
   }
 }
+row();
+//$test=array_unique($data, SORT_REGULAR);
+//debug($test);
+$cpt=0;
+foreach($data as $data){
+	$flattened=implode(",",$data);
+	$newarray[$cpt]=$flattened;
+	$cpt++;
+}
+row();
+debug($newarray);
+row();
 debug($data);
+row();
 echo "<br>";
 $json=json_encode($data);
 echo "<br>";
@@ -213,8 +227,7 @@ debug($jsondecode);
 echo "<br>";
 var_dump($data);
 row();
-
-$json = str_replace(' ', '£', $json);
+$json = str_replace(' ', '|', $json);
 $data ="?data=" . $json;
 $url = 'http://10.254.0.123/html/api.php'.$data;
 
