@@ -8,7 +8,8 @@ function debug() {
     $var = $trace[0]['args'][0];
     $lineInfo = sprintf('<div><strong>%s</strong> (line <strong>%s</strong>)</div>', $file, $line);
     $debugInfo = sprintf('<pre>%s</pre>', print_r($var, true));
-    print_r($lineInfo.$debugInfo);
+    print_r("<h3><br>____-START DEBUG-____<br></h3>".$lineInfo.$debugInfo);
+	echo "<h3>____-END DEBUG-____</h3>";
 }
 function indentJSON($json) {
 $result = '';
@@ -52,12 +53,53 @@ $prevChar = $char;
 return $result;
 }
 
-$data=file_get_contents('./data.txt',true);
-echo $data;
-echo "<br>";
-echo "<br>";
-$decode=json_decode($data);
-print_r($decode);
-debug($decode);
-echo "<br>";
+	$data=file_get_contents('./data.txt',true);
+	$data = str_replace('|', ' ', $data);
+/* 	echo $data;
+	echo "<br>";
+	echo "<br>"; */
+	$decode=json_decode($data, true);
+	//debug($decode);
+	//echo "<br>";
+	
+// Client reading loop (compatible multi-site)
+foreach ($decode as $data) {
+	//debug($data);
+	
+	// Hosts reading loop
+	echo "<br> Liste des HOSTGROUPS : <br><br>";
+	foreach ($data['hosts'] as $hosts) {
+		echo "____ HOST : ". $hosts['host'] . "<br>";
+		echo "____ NAME : ". $hosts['name'] . "<br>";
+		echo "____ STATUS : ". $hosts['status'] . "<br>";
+		echo "____ DESCRIPTION : ". $hosts['description'] . "<br>";
+		echo "<br>";
+		
+		// Alerts reading loop
+		$cpt=0;
+		foreach ($hosts['items'] as $items) {
+			
+			echo "________ NAME : ". $items['name'] . "<br>";
+			echo "________ TYPE : ". $items['type'] . "<br>";
+			echo "________ DELAY : ". $items['delay'] . "<br>";
+			
+			echo "____________ VALUE : ". $items['value'] . "<br>";
+			echo "____________ VALUE_TYPE : ". $items['value_type'] . "<br>";
+			$cpt++;
+			if($cpt %2 ==0){
+				echo "<br>";
+			}
+		}
+		echo "<br>";
+	}
+}
+	echo "<br>";
+
+/*
+Liste des HG affichés à la ligne 70 :
+	- NXTemplates
+	- TESTNX
+	- NXTEST
+	- NXXXXXX
+	- testduNX
 ?>
