@@ -1,6 +1,12 @@
 <?php
 
 function debug() {
+//**************************************************
+// Function debug
+// Description: Indent and shape function for array
+// Arguments: Array or multi-dim array to shape
+// Return value: Shaped array/multi-dim array
+//**************************************************
     $trace = debug_backtrace();
     $rootPath = dirname(dirname(__FILE__));
     $file = str_replace($rootPath, '', $trace[0]['file']);
@@ -8,10 +14,15 @@ function debug() {
     $var = $trace[0]['args'][0];
     $lineInfo = sprintf('<div><strong>%s</strong> (line <strong>%s</strong>)</div>', $file, $line);
     $debugInfo = sprintf('<pre>%s</pre>', print_r($var, true));
-    print_r("<h3><br>____-START DEBUG-____<br></h3>".$lineInfo.$debugInfo);
-	echo "<h3>____-END DEBUG-____</h3>";
+    print_r($lineInfo.$debugInfo);
 }
 function indentJSON($json) {
+//**************************************************
+// Function identJSON
+// Description: Indent and shape function for JSON
+// Arguments: $json : JSON encoded data
+// Return value: $result : indented and shaped JSON
+//**************************************************
 $result = '';
 $pos = 0;
 $strLen = strlen($json);
@@ -52,7 +63,15 @@ $prevChar = $char;
 }
 return $result;
 }
-
+function row(){
+//**************************************************
+// Function row
+// Description: simply draw double row with a first
+// one "noshade"
+//**************************************************
+	printf("<hr noshade>");
+    printf("<hr>");
+}
 	$data=file_get_contents('./data.txt',true);
 	$data = str_replace('|', ' ', $data);
 /* 	echo $data;
@@ -64,7 +83,7 @@ return $result;
 	
 // Client reading loop (compatible multi-site)
 foreach ($decode as $data) {
-	//debug($data);
+	debug($data);
 	
 	// Hosts reading loop
 	echo "<br> Liste des HOSTGROUPS : <br><br>";
