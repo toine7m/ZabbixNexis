@@ -62,15 +62,15 @@ function json_request($uri, $data) {
 	$result = curl_exec($c);
 	
 	// Uncomment to see some debug info
-/*  	echo "<b>JSON Request:</b><br>\n";
+	echo "<b>JSON Request:</b><br>\n";
 	echo $json_data."<br><br>\n";
 
 	echo "<b>JSON Answer:</b><br>\n";
 	echo $result."<br><br>\n";
 
-	echo "<b>CURL Debug Info:</b><br>\n";
+	/* echo "<b>CURL Debug Info:</b><br>\n";
 	$debug = curl_getinfo($c);
-	echo expand_arr($debug)."<br><hr>\n";   */
+	echo expand_arr($debug)."<br><hr>\n";*/
 	
 
 	return json_decode($result, true);
@@ -193,6 +193,7 @@ function row(){
 }
 
 function readDatas($decode,$api,$uri,$delay,$conn){
+	
 // Client reading loop (compatible multi-site)
 foreach ($decode as $data) {
 	//debug($data);
@@ -201,36 +202,19 @@ foreach ($decode as $data) {
 	row();
 	echo $hgId;
 	row();
+	
 	// Hosts reading loop
 	// echo "<br> Liste des HOSTS : <br><br>";
 	foreach ($data['hosts'] as $hosts) {
 		$hostName=$hosts['name'];
 		$hostNameUnique=$hosts['host'];
 		$hostId=hostExist($hgId,$hostName,$hostNameUnique,$api,$uri);
-		
- 		/* echo "____ HOST : ". $hosts['host'] . "<br>";
-		echo "____ NAME : ". $hosts['name'] . "<br>";
-		echo "____ STATUS : ". $hosts['status'] . "<br>";
-		echo "____ DESCRIPTION : ". $hosts['description'] . "<br>";
-		echo "<br>";  */
-		
-		//$cpt=0;
+		echo $hostId;
 		// Alerts reading loop
 		foreach ($hosts['items'] as $items) {
-			$result=databaseFill($conn,$items,$hostName,$hgName);
+			$result=databaseFill($conn,$items,$hostName,$hgName,$hostId,$api,$uri,$delay);
 			//debug($result);
 			//debug($items);
-			//itemCreate($hostId,$items,$delay,$api,$uri);
-			/*  echo "________ NAME : ". $items['name'] . "<br>";
-			echo "________ TYPE : ". $items['type'] . "<br>";
-			echo "________ DELAY : ". $items['delay'] . "<br>";
-			
-			echo "____________ VALUE : ". $items['value'] . "<br>";
-			echo "____________ VALUE_TYPE : ". $items['value_type'] . "<br>";
-			$cpt++;
-			if($cpt %2 ==0)
-				echo "<br>"; */
-			
 		}
 	}
 }
@@ -288,11 +272,14 @@ function hostExist($hgId,$hostName,$hostNameUnique,$api,$uri){
 	//debug($host);
 	if($host['result']){
 		//echo "Found !!! : ".$hostName."<br>";
+		return $host['result']['0']['hostid'];
 	}
 	else {
 		echo "not found : ".$hostName."<br>";
-		hostCreate($hgId,$hostName,$hostNameUnique,$api,$uri);
+		$host=hostCreate($hgId,$hostName,$hostNameUnique,$api,$uri);
+		return $host;
 	}
+	
 }
 
 function hostCreate($hgId,$hostName,$hostNameUnique,$api,$uri){
@@ -308,7 +295,7 @@ function hostCreate($hgId,$hostName,$hostNameUnique,$api,$uri){
 		),
 		'id' => "2",
 		'auth' => $api
-	);	
+	);
 	$host = json_request($uri, $data);
 	debug($host);
 
@@ -316,37 +303,8 @@ function hostCreate($hgId,$hostName,$hostNameUnique,$api,$uri){
 	echo(gettype($hostName));
 	echo(gettype($hostNameUnique)); */
 	echo $hgId."*".$hostName."*".$hostNameUnique."<br>";
-	
+	return $host['result']['hostids'][0];
 	//hostExist($hgId,$hostName,$hostNameUnique,$api,$uri);
-}
-
-function itemCreate($hostId,$items,$delay,$api,$uri){
-	debug($items);
-	echo($hostId);
-	$data = array(
-		'jsonrpc' => "2.0",
-		'method' => "item.get",
-		'params' => array(
-			'output' => array('extend'),
-			'hostids' => $hostId,
-			'sortfield' => "name"
-		),
-		'id' => "2",
-		'auth' => $api
-	);	
-	$items = json_request($uri, $data);	
-	
-
-	row();
-	//debug($items);
-	if($items['result']){
-		echo("Trouve!<br>");
-		//return $items['result'][0]['groupid'];
-	}
-	else {
-		echo "Impossible to find the item !!";
-	}
-	
 }
 
 function databaseConnection($dbuser,$dbpassword,$dbserver,$db){
@@ -373,84 +331,157 @@ function databaseConnection($dbuser,$dbpassword,$dbserver,$db){
 	//debug($conn);
 }
 
-function databaseFill($conn,$items,$hostName,$hgName){
-	
+function databaseFill($conn,$items,$hostName,$hgName,$hostId,$api,$uri,$delay){
+
 	// SELECT * FROM `alerts` WHERE host='host1' and hostgroup='client1'
-	echo "client : ".$hgName."<br>";
+	/* echo "client : ".$hgName."<br>";
 	echo "host : ".$hostName."<br>";
+	echo "item : ".$items['name']."<br>"; */
 	
-	$sql = "SELECT * FROM `alerts` WHERE host='".$hostName."' and hostgroup='".$hgName."'";
+	echo "<br>".$delay." est le delai<br>";
 	
-	$result = mysqli_query($conn,$sql);
-	//debug($result);
-	
-	row();
-	//debug($result->num_rows);
-	
-	
-	if ($result->num_rows == 0){
-		echo "c'est 0 <br>";
-		//insert des valeurs dans la table alerts !
-		$sql="INSERT INTO `alerts`(`hostgroup`, `host`, `status`, `alert`) VALUES ('".$hgName."','".$hostName."',2,'".$items['value']."')";
-		echo $sql;
-		$result = mysqli_query($conn,$sql);
-		row();
-		debug($result);
-		row();
-	} else {
-		echo "c'est 1 !<br>";
-		
-		//update le status et l'alert de la table alerts du client1 et host1
-		$sql="UPDATE `alerts` SET `status`=2,`alert`='".$items['value']."' WHERE `host`='".$hostName."' and `hostgroup`='".$hgName."'";
-		echo $sql;
-	}
-	row();
-	/*
-	if (mysqli_query($conn,$sql)) {
-		echo "<br> Ca devrait aller <br>";
-	} else {
-		echo "Error: " . $sql . "<br>" . mysqli_error($conn)."<br>";
-	} */
-	
-	
-/* 	debug($items);
 	if(is_numeric($items['value'])){
 		
-		echo $hostNameUnique." Ha ca doit aller dans les numeriques !  ".$items['value']."<br>";
-		echo $items['name']. " est le nom du host !<br>";
+		// ICI C EST NUMERIQUE
+		
+		$sql = "SELECT `id` FROM `alerts` WHERE `host`='".$hostName."' and `hostgroup`='".$hgName."' and `name`='".$items['name']."' and `status`='".$items['value']."'";
+		//echo $sql."<br>";
+		$result = mysqli_query($conn,$sql);
+		//row();
+		//debug($result);
+		row();
+		debug($result->num_rows);
+		row();
+		
+		if ($result->num_rows == 0){
+			
+			echo "<br>Numerique et n'existe pas<br>";
+			
+			// insert priority value in a new row for the new host
+			$sql="INSERT INTO `alerts`(`hostgroup`, `host`, `name`, `status`) VALUES ('".$hgName."','".$hostName."','".$items['name']."','".$items['value']."')";
+			echo $sql;
+			$result = mysqli_query($conn,$sql);
+			
+			$hostNameS="'".$hostName."'";
+			$hgNameS="'".$hgName."'";
+			$itemNameS="'".$items['name']."'";
+			$data = array(
+			'jsonrpc' => "2.0",
+			'method' => "item.create",
+			'params' => array(
+				'name' => $items['name'].'_priority',
+				'hostid' => $hostId,
+				'type' => 11,
+				'key_' => 'db.odbc.select['.$items['name'].'_priority,test]',
+				'username' => 'root',
+				'params' => 'SELECT `status` FROM `alerts` WHERE `host`='.$hostNameS.' and `hostgroup`='.$hgNameS.' and `name`='.$itemNameS.';',
+				'value_type' => 3,
+				'data_type' => 0,
+				'delay' => 30,
+				'history' => 90,
+				'trends' => 365,
+				'delta' => 0,
+				'enabled' => 0
+			),
+			'id' => "2",
+			'auth' => $api
+			);
+			$item = json_request($uri, $data);
+			debug($item);
+			
+		} else {
+			
+			echo "<br>Numerique et existe<br>";
+			
+			// Update of the database with the new values
+			$sql="UPDATE `alerts` SET `timeout` = SYSDATE(), `status`=".$items['value']." WHERE `host`='".$hostName."' and `hostgroup`='".$hgName."' and `name`='".$items['name']."'";
+			echo $sql;
+			$result = mysqli_query($conn,$sql);
+			
+		}
 	} else {
-		echo "Ha ca doit PAS aller dans les numeriques !  ".$items['value']."<br>";
-	} */
-	
+		
+		// ICI C EST PAS NUMERIQUE
+		
+		$sql = "SELECT `id` FROM `alerts` WHERE `host`='".$hostName."' and `hostgroup`='".$hgName."' and `name`='".$items['name']."' and `alert`='".$items['value']."'";
+		//echo $sql."<br>";
+		$result = mysqli_query($conn,$sql);
+		/* row();
+		debug($result); */
+		row();
+		debug($result->num_rows);
+		row();
+		
+		if ($result->num_rows == 0){
+			
+			echo "<br>Pas numerique et n'existe pas<br>";
+			
+			//echo "Ha ca doit PAS aller dans les numeriques !  ".$items['value']."<br>";
+			//echo $items['name']. " est le nom du host !<br>";
+			
+			// insert description value in a new row for the new host
+			//$sql="INSERT INTO `alerts`(`hostgroup`, `host`, `name`, `alert`) VALUES ('".$hgName."','".$hostName."','".$items['name']."','".$items['value']."')";
+			$sql="UPDATE `alerts` SET `alert`='".$items['value']."' WHERE `host`='".$hostName."' and `hostgroup`='".$hgName."' and `name`='".$items['name']."'";
+			echo $sql;
+			$result = mysqli_query($conn,$sql);		
+
+			$hostNameS="'".$hostName."'";
+			$hgNameS="'".$hgName."'";
+			$itemNameS="'".$items['name']."'";
+			$data = array(
+			'jsonrpc' => "2.0",
+			'method' => "item.create",
+			'params' => array(
+				'name' => $items['name'].'_description',
+				'hostid' => $hostId,
+				'type' => 11,
+				'key_' => 'db.odbc.select['.$items['name'].'_description,test]',
+				'username' => 'root',
+				'params' => 'SELECT `alert` FROM `alerts` WHERE `host`='.$hostNameS.' and `hostgroup`='.$hgNameS.' and `name`='.$itemNameS.';',
+				'value_type' => 4,
+				'delay' => 30,
+				'history' => 90,
+				'delta' => 0,
+				'enabled' => 0
+			),
+			'id' => "2",
+			'auth' => $api
+			);
+			$item = json_request($uri, $data);
+			debug($item);
+			
+		} else {
+			
+			echo "<br>Pas numerique et existe<br>";
+			
+			// Update of the database with the new values
+			$sql="UPDATE `alerts` SET `alert`='".$items['value']."' WHERE `host`='".$hostName."' and `hostgroup`='".$hgName."' and `name`='".$items['name']."'";
+			echo $sql;
+			$result = mysqli_query($conn,$sql);
+			
+		}
+		
+	}
 }
 
 /***************************************************/
 /* programme principale 						   */
 /***************************************************/
 
+$time_start = microtime(true);
 // Variables fichier config
-$delay=300;
-$clientID=25;
-$clientName='Client1';
-$ipClient='10.254.0.123';
-$username='admin';
-$password='zabbix';
-$dbserver="127.0.0.1";
-$dbuser="root";
-$dbpassword="zabbix";
-$db="supervisor";
+include('config.php');
 
 // setup Zabbix connection
 try {
-	
 	// connect to Zabbix API
-	$uri = "https://".$ipClient."/api_jsonrpc.php";
+	$uri = "https://".$ipSupervisor."/api_jsonrpc.php";
 	$api = zabbix_auth($uri, $username, $password);
 	//expand_arr(zabbix_get_hostgroups($uri, $api));
 	
 	// connect to database
 	$conn=databaseConnection($dbuser,$dbpassword,$dbserver,$db);
-	debug($conn->stat);
+	debug($conn);
 	
 	// Get content from file named 'data.txt' and decode the JSON string to the variable '$data'
 	$data=getContent();
@@ -465,7 +496,12 @@ try {
 	debug($data);
 	
 	// close MySQL connection
-	mysqli_close($link);
+	mysqli_close($conn);
+	
+	// Little script to see the execution time of the script
+	$time_end = microtime(true);
+	$time = $time_end - $time_start;
+	echo 'Script executed in '.$time.' seconds<br><br><br>';
 	
 } catch (Exception $e) {
     // Exception in ZabbixApi catched
@@ -477,18 +513,9 @@ try {
 		trigger
 		trigger supp : date derniere collecte BDD pour alerter si jamais pas reçu depuis X min
 	stocker status + alerte BDD
-	Hostgroup | Host | status | alert | timeout
 	
-	afficher tout de alerte ou 'host' correspond à 'host1' et ou 'client' est égal a 'client1'
-	SELECT * FROM `alerts` WHERE `host`='host1' and `hostgroup`='client1'
+	Hostgroup | Host | Name | Status | Alert | Timeout
 
-	update le status et l'alert de la table alerts du client1 et host1
-	UPDATE `alerts` SET `status`=1,`alert`='detail alerte' WHERE `host`='host1' and `hostgroup`='client1'
-
-	insert des valeurs dans la table alerts !
-	INSERT INTO `alerts`(`hostgroup`, `host`, `status`, `alert`) VALUES ('clientxx','hostxx',2,'oups une alerte !!')
-	
 	 */
-	
 }
 ?>
