@@ -62,11 +62,11 @@ function json_request($uri, $data) {
 	$result = curl_exec($c);
 	
 	// Uncomment to see some debug info
-	echo "<b>JSON Request:</b><br>\n";
+	/* echo "<b>JSON Request:</b><br>\n";
 	echo $json_data."<br><br>\n";
 
 	echo "<b>JSON Answer:</b><br>\n";
-	echo $result."<br><br>\n";
+	echo $result."<br><br>\n"; */
 
 	/* echo "<b>CURL Debug Info:</b><br>\n";
 	$debug = curl_getinfo($c);
@@ -199,9 +199,10 @@ foreach ($decode as $data) {
 	//debug($data);
 	$hgName=$data['name'];
 	$hgId=hostgroupExist($hgName,$api,$uri);
-	row();
+	
+	/* row();
 	echo $hgId;
-	row();
+	row(); */
 	
 	// Hosts reading loop
 	// echo "<br> Liste des HOSTS : <br><br>";
@@ -209,10 +210,10 @@ foreach ($decode as $data) {
 		$hostName=$hosts['name'];
 		$hostNameUnique=$hosts['host'];
 		$hostId=hostExist($hgId,$hostName,$hostNameUnique,$api,$uri);
-		echo $hostId;
+		//echo $hostId;
 		// Alerts reading loop
 		foreach ($hosts['items'] as $items) {
-			$result=databaseFill($conn,$items,$hostName,$hgName,$hostId,$api,$uri,$delay);
+			$result=databaseFill($conn,$items,$hostName,$hgName,$hostId,$hostNameUnique,$api,$uri,$delay);
 			//debug($result);
 			//debug($items);
 		}
@@ -237,10 +238,10 @@ function hostgroupExist($hgName,$api,$uri){
 	$hg = json_request($uri, $data);	
 	
 
-	row();
-	debug($hg);
+	//row();
+	//debug($hg);
 	if($hg['result']){
-		echo("Trouve!<br>");
+		//echo("Trouve!<br>");
 		return $hg['result'][0]['groupid'];
 	}
 	else {
@@ -275,7 +276,7 @@ function hostExist($hgId,$hostName,$hostNameUnique,$api,$uri){
 		return $host['result']['0']['hostid'];
 	}
 	else {
-		echo "not found : ".$hostName."<br>";
+		//echo "not found : ".$hostName."<br>";
 		$host=hostCreate($hgId,$hostName,$hostNameUnique,$api,$uri);
 		return $host;
 	}
@@ -297,12 +298,12 @@ function hostCreate($hgId,$hostName,$hostNameUnique,$api,$uri){
 		'auth' => $api
 	);
 	$host = json_request($uri, $data);
-	debug($host);
+	//debug($host);
 
 /* 	echo(gettype($hgId));
 	echo(gettype($hostName));
 	echo(gettype($hostNameUnique)); */
-	echo $hgId."*".$hostName."*".$hostNameUnique."<br>";
+	//echo $hgId."*".$hostName."*".$hostNameUnique."<br>";
 	return $host['result']['hostids'][0];
 	//hostExist($hgId,$hostName,$hostNameUnique,$api,$uri);
 }
@@ -331,14 +332,14 @@ function databaseConnection($dbuser,$dbpassword,$dbserver,$db){
 	//debug($conn);
 }
 
-function databaseFill($conn,$items,$hostName,$hgName,$hostId,$api,$uri,$delay){
-
+function databaseFill($conn,$items,$hostName,$hgName,$hostId,$hostNameUnique,$api,$uri,$delay){
+	$fill_start = microtime(true);
 	// SELECT * FROM `alerts` WHERE host='host1' and hostgroup='client1'
 	/* echo "client : ".$hgName."<br>";
 	echo "host : ".$hostName."<br>";
 	echo "item : ".$items['name']."<br>"; */
 	
-	echo "<br>".$delay." est le delai<br>";
+	//echo "<br>".$delay." est le delai<br>";
 	
 	if(is_numeric($items['value'])){
 		
@@ -349,17 +350,17 @@ function databaseFill($conn,$items,$hostName,$hgName,$hostId,$api,$uri,$delay){
 		$result = mysqli_query($conn,$sql);
 		//row();
 		//debug($result);
-		row();
+		/* row();
 		debug($result->num_rows);
-		row();
+		row(); */
 		
 		if ($result->num_rows == 0){
-			
-			echo "<br>Numerique et n'existe pas<br>";
+			$db_start = microtime(true);
+			//echo "<br>Numerique et n'existe pas<br>";
 			
 			// insert priority value in a new row for the new host
 			$sql="INSERT INTO `alerts`(`hostgroup`, `host`, `name`, `status`) VALUES ('".$hgName."','".$hostName."','".$items['name']."','".$items['value']."')";
-			echo $sql;
+			//echo $sql;
 			$result = mysqli_query($conn,$sql);
 			
 			$hostNameS="'".$hostName."'";
@@ -387,17 +388,42 @@ function databaseFill($conn,$items,$hostName,$hgName,$hostId,$api,$uri,$delay){
 			'auth' => $api
 			);
 			$item = json_request($uri, $data);
-			debug($item);
+			//debug($item);
+
+			for ($i = 1; $i <6; $i++){
+				$trigger_start= microtime(true);
+			$expression="{".$hostNameUnique.":db.odbc.select[".$items['name']."_priority,test].last()}=".$i;
+			$description="Happened on : ".$items['name'];
+			$trigger = array(
+			'jsonrpc' => "2.0",
+			'method' => "trigger.create",
+			'params' => array(
+				'hostid' => $hostId,
+				'expression' => $expression,
+				'description' => $description,
+				'priority' => $i
+			),
+			'id' => "2",
+			'auth' => $api
+			);
+			$result = json_request($uri, $trigger);
+			//debug($result);
+			$trigger_end = microtime(true);
+			$trigger = $trigger_end - $trigger_start;
+			echo '______Insert 1 trigger in Zabbix via API executed in '.$trigger.' seconds<br>';
+			}
 			
+			$db_end = microtime(true);
+			$db = $db_end - $db_start;
+			echo '___Total Insert item + trigger BDD + API executed in '.$db.' seconds<br>';
 		} else {
 			
-			echo "<br>Numerique et existe<br>";
+			//echo "<br>Numerique et existe<br>";
 			
 			// Update of the database with the new values
 			$sql="UPDATE `alerts` SET `timeout` = SYSDATE(), `status`=".$items['value']." WHERE `host`='".$hostName."' and `hostgroup`='".$hgName."' and `name`='".$items['name']."'";
-			echo $sql;
+			//echo $sql;
 			$result = mysqli_query($conn,$sql);
-			
 		}
 	} else {
 		
@@ -408,13 +434,13 @@ function databaseFill($conn,$items,$hostName,$hgName,$hostId,$api,$uri,$delay){
 		$result = mysqli_query($conn,$sql);
 		/* row();
 		debug($result); */
-		row();
+		/* row();
 		debug($result->num_rows);
-		row();
+		row(); */
 		
 		if ($result->num_rows == 0){
-			
-			echo "<br>Pas numerique et n'existe pas<br>";
+			$num_start = microtime(true);
+			//echo "<br>Pas numerique et n'existe pas<br>";
 			
 			//echo "Ha ca doit PAS aller dans les numeriques !  ".$items['value']."<br>";
 			//echo $items['name']. " est le nom du host !<br>";
@@ -422,7 +448,7 @@ function databaseFill($conn,$items,$hostName,$hgName,$hostId,$api,$uri,$delay){
 			// insert description value in a new row for the new host
 			//$sql="INSERT INTO `alerts`(`hostgroup`, `host`, `name`, `alert`) VALUES ('".$hgName."','".$hostName."','".$items['name']."','".$items['value']."')";
 			$sql="UPDATE `alerts` SET `alert`='".$items['value']."' WHERE `host`='".$hostName."' and `hostgroup`='".$hgName."' and `name`='".$items['name']."'";
-			echo $sql;
+			//echo $sql;
 			$result = mysqli_query($conn,$sql);		
 
 			$hostNameS="'".$hostName."'";
@@ -448,20 +474,25 @@ function databaseFill($conn,$items,$hostName,$hgName,$hostId,$api,$uri,$delay){
 			'auth' => $api
 			);
 			$item = json_request($uri, $data);
-			debug($item);
-			
+			//debug($item);
+			$num_end = microtime(true);
+			$num = $num_end - $num_start;
+			echo '___Fill DB + item.create Zabbix API non numeric executed in '.$num.' seconds<br>';
 		} else {
 			
-			echo "<br>Pas numerique et existe<br>";
+			//echo "<br>Pas numerique et existe<br>";
 			
 			// Update of the database with the new values
 			$sql="UPDATE `alerts` SET `alert`='".$items['value']."' WHERE `host`='".$hostName."' and `hostgroup`='".$hgName."' and `name`='".$items['name']."'";
-			echo $sql;
+			//echo $sql;
 			$result = mysqli_query($conn,$sql);
 			
 		}
 		
 	}
+	$fill_end = microtime(true);
+	$fill = $fill_end - $fill_start;
+	echo 'Fill executed in '.$fill.' seconds<br>';
 }
 
 /***************************************************/
@@ -479,9 +510,10 @@ try {
 	$api = zabbix_auth($uri, $username, $password);
 	//expand_arr(zabbix_get_hostgroups($uri, $api));
 	
+	
 	// connect to database
 	$conn=databaseConnection($dbuser,$dbpassword,$dbserver,$db);
-	debug($conn);
+	//debug($conn);
 	
 	// Get content from file named 'data.txt' and decode the JSON string to the variable '$data'
 	$data=getContent();
@@ -492,8 +524,8 @@ try {
 	//debug($conn);
 	
 	// Print all the datas
-	row();
-	debug($data);
+	//row();
+	//debug($data);
 	
 	// close MySQL connection
 	mysqli_close($conn);
@@ -501,7 +533,7 @@ try {
 	// Little script to see the execution time of the script
 	$time_end = microtime(true);
 	$time = $time_end - $time_start;
-	echo 'Script executed in '.$time.' seconds<br><br><br>';
+	echo '<br> -_- Script executed in '.$time.' seconds<br><br><br>';
 	
 } catch (Exception $e) {
     // Exception in ZabbixApi catched
