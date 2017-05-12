@@ -1,24 +1,17 @@
 <?php
-	//process client request (Via URL)
-	if(!empty($_GET['data'])){
-		//
-		$data=$_GET['data'];
-		$data = str_replace('£', ' ', $data);
-		echo("<br>\nVoici la chaine :<br><br>\n\n");
-		echo $data;
-		$file = fopen("data.txt","w");
-		echo fwrite($file,$data);
-		fclose($file);
-		$mavariable=$data;
+
+	$uploaddir = realpath('./') . '/';
+	$uploadfile = $uploaddir . basename($_FILES['file_contents']['name']);
+	if (move_uploaded_file($_FILES['file_contents']['tmp_name'], $uploadfile)) {
+	    //echo "File is valid, and was successfully uploaded.\n<br>";
+		echo (shell_exec('php stockage.php'));
+	} else {
+	    echo "Possible file upload attack!\n";
 	}
-	else {
-		//throw invalid request
-		
-		http_response_code(404);
-		include('404.php'); // provide your own HTML for the error page
-		die();
-		
-		//echo "t'as pas dis le mot magique !!!!<br><br>\n\n";
-		//echo $data;
-	}
+	/* echo 'Here is some more debugging info:';
+	print_r($_FILES);
+	echo "\n<hr />\n";
+	print_r($_POST);
+	print "</pr" . "e>\n";*/
+
 ?>
