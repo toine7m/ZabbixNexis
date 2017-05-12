@@ -1,5 +1,15 @@
 <?php
+
 /*  
+
+	  _____     _        ____     ____                __  __   _   _   U _____ u __  __              ____
+	 |"_  /uU  /"\  u U | __")uU | __")u    ___       \ \/"/  | \ |"|  \| ___"|/ \ \/"/      ___    / __"| u
+	 U / //  \/ _ \/   \|  _ \/ \|  _ \/   |_"_|      /\  /\ <|  \| |>  |  _|"   /\  /\     |_"_|  <\___ \/
+	 \/ /_   / ___ \    | |_) |  | |_) |    | |      U /  \ uU| |\  |u  | |___  U /  \ u     | |    u___) |
+	 /____| /_/   \_\   |____/   |____/   U/| |\u     /_/\_\  |_| \_|   |_____|  /_/\_\    U/| |\u  |____/>>
+	 _//<<,- \\    >>  _|| \\_  _|| \\_.-,_|___|_,-.,-,>> \\_ ||   \\,-.<<   >>,-,>> \\_.-,_|___|_,-.)(  (__)
+	(__) (_/(__)  (__)(__) (__)(__) (__)\_)-' '-(_/  \_)  (__)(_")  (_/(__) (__)\_)  (__)\_)-' '-(_/(__)
+
     INTRODUCTION:
     ZabbixNexis, little project for Zabbix during my internship
     Copyright (C) 2017 Massinon Antoine
@@ -23,6 +33,7 @@
     Modifications:
     - qdqdqd auhor: date: version: 
 */
+
 function debug() {
 //**************************************************
 // Function debug
@@ -215,12 +226,17 @@ function collectDatas($api){
 function transformDatas($collectedData, $clientName, $clientId, $delay){
 //**************************************************
 // Function transformDatas
-// Description: ....
+// Description: Transform the datas from an array
+// and add a new level to Zabbix, the "client"
 // Arguments:
-// $collectedData: multi-dim array containe all previously
-// collected data (see function collectdata)
+// $collectedData: multi-dim array containe all 
+// previously collected datas (see function collectdata)
+// $clientName: Name of the clint (hostgroup)
+// $clientID: ID of the client (hostgroup)
+// $delay: The interval between each collect in the DB
 // Return value: $transformedData
-// multi-dim array containing ......
+// multi-dim array containing the transformed datas
+// plus a new level, the "client"
 //**************************************************
 
 	// Array's initialisation
@@ -257,8 +273,8 @@ function transformDatas($collectedData, $clientName, $clientId, $delay){
 		
 		// Hosts reading loop. Goes into an item record
 		foreach ($hgRec['hosts'] as $hostRec) {
-			$itemStatusRecTmpl['name'] = $hostRec['name'] . '_status';
-			$itemAlertRecTmpl['name'] = $hostRec['name'] . '_alert';
+			$itemStatusRecTmpl['name'] = $hostRec['name']; //ajouter . "_status" à la fin
+			$itemAlertRecTmpl['name'] = $hostRec['name']; //ajouter . "_alert" à la fin
 
 			// Definition
 			$memPriority = -1;
@@ -289,30 +305,49 @@ function transformDatas($collectedData, $clientName, $clientId, $delay){
 	}
 	return($data);
 }
-function sendData($data){
+function sendData($data,$ipNexis,$clientName){
 	$jsonData=json_encode($data);
-	$json = str_replace(' ', '|', $jsonData);
-	$data ="?data=" . $json;
-	$url = 'http://10.254.0.123/html/api.php'.$data;
-
-	// use key 'http' even if you send the request to https://...
-	$options = array(
-    'http' => array(
-        'header'  => "Content-type: text/html",
-		//'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
-        'method'  => 'POST',
-        'content' => http_build_query(array($data,$json))
-    )
-);
-$context  = stream_context_create($options);
-$result = file_get_contents($url, false, $context);
-row();
-if ($result === FALSE) {
-	/* Handle error */
-	echo "ouille !!" ;
+	$data = str_replace(' ', '|', $jsonData);
+	$myfile = fopen('data', 'w') or die('Unable to open file!');
+	//echo "<br> le nom du client est : ". $clientName;
+	$txt = $data;
+	fwrite($myfile, $txt);
+	fclose($myfile);
+	
+	$target_url = 'http://' . $ipNexis . '/html/api.php';
+        //This needs to be the full path to the file you want to send.
+	$file_name_with_full_path = realpath('./data');
+        /* curl will accept an array here too.
+         * Many examples I found showed a url-encoded string instead.
+         * Take note that the 'key' in the array will be the key that shows up in the
+         * $_FILES array of the accept script. and the at sign '@' is required before the
+         * file name.
+         */
+	$post = array('extra_info' => '123456','file_contents'=>'@'.$file_name_with_full_path);
+ 
+        $ch = curl_init();
+	curl_setopt($ch, CURLOPT_URL,$target_url);
+	curl_setopt($ch, CURLOPT_POST,1);
+	curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+	$result=curl_exec ($ch);
+	curl_close ($ch);
+	//echo $result;
+	
+	// Log the results
+	//$result = strval($result);
+	$exploded=explode('\n',$result);
+	
+/* 	foreach($exploded as $row){
+	echo $row."<br>";
+	} */
+	$logFile = fopen('/var/log/ZabbixNexis/data.log', 'a+') or die('Unable to open file!');
+	foreach($exploded as $row){
+	fwrite($logFile,$row."\n");
 	}
-	var_dump($result);
-	return $json;
+	fclose($logFile);
+	return $data;
+	
 }
 
 /***************************************************/
@@ -320,12 +355,7 @@ if ($result === FALSE) {
 /***************************************************/
 
 // Variables fichier config
-$delay=300;
-$clientID=25;
-$clientName='Client1';
-$ipClient='10.254.0.10';
-$userZabbix='zabirepo';
-$passwordZabbix='nexis369*';
+include('config.php');
 
 // load ZabbixApi
 require_once 'lib/ZabbixApi.class.php';
@@ -342,25 +372,16 @@ try {
 	/* row();
 	debug($collectedData);
 	row(); */
-
+	
 	// trasnform collected data
 	$transformedData = transformDatas($collectedData, $clientName, $clientID, $delay);
 
-	row();
-	debug($transformedData);
-	row();
+	//debug($transformedData);
+
 	
 	// Send data to supervisor
-	$jsonData=sendData($transformedData);
+	$jsonData=sendData($transformedData,$ipNexis,$clientName);
 
-	// List datas for testing purpose
-	echo "<br><br>";
-	echo $jsonData;
-	echo "<br><br>";
-	$jsondecode=json_decode($jsonData);
-	debug($jsondecode);
-	echo "<br>";
-	row();
 } catch (Exception $e) {
     // Exception in ZabbixApi catched
     echo $e->getMessage();
