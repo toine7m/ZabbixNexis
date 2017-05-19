@@ -273,8 +273,8 @@ function transformDatas($collectedData, $clientName, $clientId, $delay){
 		
 		// Hosts reading loop. Goes into an item record
 		foreach ($hgRec['hosts'] as $hostRec) {
-			$itemStatusRecTmpl['name'] = $hostRec['name']; //ajouter . "_status" à la fin
-			$itemAlertRecTmpl['name'] = $hostRec['name']; //ajouter . "_alert" à la fin
+			$itemStatusRecTmpl['name'] = $hostRec['name']; //ajouter . "_status" Ã  la fin
+			$itemAlertRecTmpl['name'] = $hostRec['name']; //ajouter . "_alert" Ã  la fin
 
 			// Definition
 			$memPriority = -1;
@@ -359,6 +359,7 @@ include('config.php');
 
 // load ZabbixApi
 require_once 'lib/ZabbixApi.class.php';
+
 use ZabbixApi\ZabbixApi;
 
 // setup Zabbix connection
