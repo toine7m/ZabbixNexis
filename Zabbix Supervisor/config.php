@@ -1,5 +1,11 @@
 <?php
 
+// LogLevel
+// if 0 => log only script execution time
+// if 1 => log JSON request and answer
+// if 2 => log JSON request and answer + SQL requests
+$logLevel=2;
+
 // Delay of item actualization rate
 $delay=300;
 
